@@ -4,6 +4,8 @@ on: [push, workflow_dispatch]
 jobs:
   compile:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - name: Install Tools
@@ -17,3 +19,10 @@ jobs:
         with:
           name: openbios-ppc-custom
           path: obj-ppc/openbios-qemu.elf
+      - name: Publish Firmware Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: firmware-latest
+          name: Latest OpenBIOS Firmware
+          prerelease: true
+          files: obj-ppc/openbios-qemu.elf
