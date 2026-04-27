@@ -243,22 +243,9 @@ headerless
 \ Installation
 \
 
-\ True if the host told us to skip Bochs VBE init (e.g. ati-vga already
-\ programmed by QEMU via -g; VBE MMIO window is not present on that device).
-: skip-vbe-init? ( -- flag )
-  " /options" find-package drop s" skip-vbe-init?" rot get-package-property not if
-    decode-string 2swap 2drop
-    s" true" drop -rot comp 0=
-  else
-    false
-  then
-;
-
 : qemu-vga-driver-install ( -- )
-  skip-vbe-init? not if
-    mmio-addr -1 = if
-      map-mmio vbe-init
-    then
+  mmio-addr -1 = if
+    map-mmio vbe-init
   then
   fb-addr -1 = if
     map-fb fb-addr to frame-buffer-adr
