@@ -243,10 +243,11 @@ headerless
 \ Installation
 \
 
-\ True if the host told us to skip Bochs VBE init (e.g. ati-vga already
-\ programmed by QEMU via -g; VBE MMIO window is not present on that device).
-: skip-vbe-init? ( -- flag )
-  " /options" find-package drop s" skip-vbe-init?" rot get-package-property not if
+\ True when the VBE registers must be accessed via legacy I/O ports
+\ (0x1CE/0x1D0) instead of MMIO BAR2.  Set this for ati-vga: its BAR2 is
+\ the ATI MMIO register bank, not a Bochs VBE window.
+: vbe-legacy? ( -- flag )
+  " /options" find-package drop s" vbe-legacy?" rot get-package-property not if
     decode-string 2swap 2drop
     s" true" drop -rot comp 0=
   else
@@ -255,7 +256,11 @@ headerless
 ;
 
 : qemu-vga-driver-install ( -- )
-  skip-vbe-init? not if
+  vbe-legacy? if
+    \ Switch to legacy I/O port VBE before init; skip MMIO mapping.
+    ['] vbe-legacy-iow! to vbe-iow!
+    vbe-init
+  else
     mmio-addr -1 = if
       map-mmio vbe-init
     then
