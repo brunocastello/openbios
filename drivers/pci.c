@@ -1051,6 +1051,22 @@ int vga_config_cb (const pci_config_t *config)
                                     }
                             }
                     }
+
+                    /* ATI Rage 128 Pro — inject driver-reg-properties so Mac OS 9
+                     * Display Manager flags this node as RAVE-capable at boot.
+                     * The ROM NDRV may fail to set this in QEMU; injecting here
+                     * lets Quake pass its initial display-tree acceleration check
+                     * before QD3D has a chance to load our 3DEX plugin. */
+                    if (pci_config_read16(config->dev, PCI_VENDOR_ID) ==
+                            PCI_VENDOR_ID_ATI &&
+                        pci_config_read16(config->dev, PCI_DEVICE_ID) ==
+                            PCI_DEVICE_ID_ATI_RAGE128_PF) {
+                        /* Four-byte big-endian capability mask — presence alone
+                         * satisfies the Display Manager "is accelerated?" test. */
+                        static const uint8_t ati_drv_reg[4] = { 0x00, 0x00, 0x00, 0x01 };
+                        set_property(ph, "driver-reg-properties",
+                                     (const char *)ati_drv_reg, sizeof(ati_drv_reg));
+                    }
             }
 #endif
 
