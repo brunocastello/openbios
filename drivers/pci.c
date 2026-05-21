@@ -1067,6 +1067,10 @@ int vga_config_cb (const pci_config_t *config)
                 ph = get_cur_dev();
                 set_property(ph, "driver-reg-properties",
                              (const char *)ati_drv_reg, sizeof(ati_drv_reg));
+                set_property(ph, "QD3D Accelerator",
+                             (const char *)ati_drv_reg, sizeof(ati_drv_reg));
+                set_property(ph, "RAVE",
+                             (const char *)ati_drv_reg, sizeof(ati_drv_reg));
             }
 #endif
 
