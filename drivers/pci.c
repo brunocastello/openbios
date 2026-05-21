@@ -1054,11 +1054,13 @@ int vga_config_cb (const pci_config_t *config)
 
             }
 
-            /* ATI Rage 128 Pro — inject driver-reg-properties unconditionally
-             * (not guarded by ROM BAR) so Mac OS 9 Display Manager flags this
-             * node as RAVE-capable at boot even when no romfile= is provided.
-             * Presence alone satisfies Quake's pre-Q3Initialize display-tree
-             * acceleration check before QD3D loads our 3DEX plugin. */
+            /* Currently we don't read FCode from the hardware but execute
+             * it directly */
+            feval("['] vga-driver-fcode 2 cells + 1 byte-load");
+
+            /* ATI Rage 128 Pro — inject RAVE properties onto the display node
+             * AFTER FCode runs, so they land on the node Quake's Name Registry
+             * check actually reads (the display output node, not the PCI node). */
             if (pci_config_read16(config->dev, PCI_VENDOR_ID) ==
                     PCI_VENDOR_ID_ATI &&
                 pci_config_read16(config->dev, PCI_DEVICE_ID) ==
@@ -1073,10 +1075,6 @@ int vga_config_cb (const pci_config_t *config)
                              (const char *)ati_drv_reg, sizeof(ati_drv_reg));
             }
 #endif
-
-            /* Currently we don't read FCode from the hardware but execute
-             * it directly */
-            feval("['] vga-driver-fcode 2 cells + 1 byte-load");
 
 #ifdef CONFIG_MOL
             /* Install special words for Mac On Linux */
