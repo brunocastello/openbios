@@ -1058,21 +1058,24 @@ int vga_config_cb (const pci_config_t *config)
              * it directly */
             feval("['] vga-driver-fcode 2 cells + 1 byte-load");
 
-            /* ATI Rage 128 Pro — inject RAVE properties onto the display node
-             * AFTER FCode runs, so they land on the node Quake's Name Registry
-             * check actually reads (the display output node, not the PCI node). */
+            /* After byte-load the current node snaps back to the PCI parent.
+             * FCode created a child node with device_type="display" (ATY,Rage128Pd).
+             * Use dt_iterate_type to find that display child and set RAVE properties
+             * on it directly, so Quake's pre-Q3Initialize Name Registry check passes. */
             if (pci_config_read16(config->dev, PCI_VENDOR_ID) ==
                     PCI_VENDOR_ID_ATI &&
                 pci_config_read16(config->dev, PCI_DEVICE_ID) ==
                     PCI_DEVICE_ID_ATI_RAGE128_PF) {
                 static const uint8_t ati_drv_reg[4] = { 0x00, 0x00, 0x00, 0x01 };
-                ph = get_cur_dev();
-                set_property(ph, "driver-reg-properties",
-                             (const char *)ati_drv_reg, sizeof(ati_drv_reg));
-                set_property(ph, "QD3D Accelerator",
-                             (const char *)ati_drv_reg, sizeof(ati_drv_reg));
-                set_property(ph, "RAVE",
-                             (const char *)ati_drv_reg, sizeof(ati_drv_reg));
+                phandle_t disp = dt_iterate_type(0, "display");
+                if (disp) {
+                    set_property(disp, "driver-reg-properties",
+                                 (const char *)ati_drv_reg, sizeof(ati_drv_reg));
+                    set_property(disp, "QD3D Accelerator",
+                                 (const char *)ati_drv_reg, sizeof(ati_drv_reg));
+                    set_property(disp, "RAVE",
+                                 (const char *)ati_drv_reg, sizeof(ati_drv_reg));
+                }
             }
 #endif
 
