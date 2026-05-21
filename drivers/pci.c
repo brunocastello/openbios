@@ -1054,26 +1054,35 @@ int vga_config_cb (const pci_config_t *config)
 
             }
 
-            /* Currently we don't read FCode from the hardware but execute
-             * it directly */
-            feval("['] vga-driver-fcode 2 cells + 1 byte-load");
+            /* Save the ATI PCI device node phandle BEFORE byte-load
+             * because feval snaps the current node back to the PCI parent. */
+            {
+                phandle_t ati_node = 0;
+                if (pci_config_read16(config->dev, PCI_VENDOR_ID) ==
+                        PCI_VENDOR_ID_ATI &&
+                    pci_config_read16(config->dev, PCI_DEVICE_ID) ==
+                        PCI_DEVICE_ID_ATI_RAGE128_PF) {
+                    ati_node = get_cur_dev();
+                }
 
-            /* After byte-load the current node snaps back to the PCI parent.
-             * FCode created a child node with device_type="display" (ATY,Rage128Pd).
-             * Use dt_iterate_type to find that display child and set RAVE properties
-             * on it directly, so Quake's pre-Q3Initialize Name Registry check passes. */
-            if (pci_config_read16(config->dev, PCI_VENDOR_ID) ==
-                    PCI_VENDOR_ID_ATI &&
-                pci_config_read16(config->dev, PCI_DEVICE_ID) ==
-                    PCI_DEVICE_ID_ATI_RAGE128_PF) {
-                static const uint8_t ati_drv_reg[4] = { 0x00, 0x00, 0x00, 0x01 };
-                phandle_t disp = dt_iterate_type(0, "display");
-                if (disp) {
-                    set_property(disp, "driver-reg-properties",
+                /* Currently we don't read FCode from the hardware but execute
+                 * it directly */
+                feval("['] vga-driver-fcode 2 cells + 1 byte-load");
+
+                /* Set RAVE capability properties directly on the ATI PCI OF node.
+                 * vga.fs never calls new-device so no "display" child exists;
+                 * dt_iterate_type(0,"display") always returns 0. Setting properties
+                 * on the PCI node itself puts them in the Name Registry entry that
+                 * Mac OS 9 creates for this device — the same entry the ndrv sees
+                 * as GLOBAL.deviceEntry — so QADeviceGetFirstDevice() finds them
+                 * before Q3Initialize and Quake's RAVE pre-check passes. */
+                if (ati_node) {
+                    static const uint8_t ati_drv_reg[4] = { 0x00, 0x00, 0x00, 0x01 };
+                    set_property(ati_node, "driver-reg-properties",
                                  (const char *)ati_drv_reg, sizeof(ati_drv_reg));
-                    set_property(disp, "QD3D Accelerator",
+                    set_property(ati_node, "QD3D Accelerator",
                                  (const char *)ati_drv_reg, sizeof(ati_drv_reg));
-                    set_property(disp, "RAVE",
+                    set_property(ati_node, "RAVE",
                                  (const char *)ati_drv_reg, sizeof(ati_drv_reg));
                 }
             }
