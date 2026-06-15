@@ -253,12 +253,11 @@ headerless
 
     frame-buffer-adr encode-int " address" property
 
-    \ AAPL,address: array of mapped BAR addresses expected by Mac OS 9 extensions.
-    \ Index 0 = BAR0 (framebuffer), index 1 = BAR1 (I/O, unused=0),
-    \ index 2 = BAR2 (MMIO registers). ATI 3D Accelerator reads index 2
-    \ to locate the CCE/PM4 MMIO base for hardware 3D initialisation.
+    \ AAPL,address: mapped memory BAR addresses (IO BARs excluded, as per
+    \ real ATI FCode ROM convention).  Index 0 = BAR0 (framebuffer),
+    \ index 1 = BAR2 (MMIO registers).  The ATI Resource Manager uses
+    \ index 1 to locate the CCE/PM4 MMIO base for hardware 3D init.
     frame-buffer-adr encode-int
-    0 encode-int encode+
     mmio-addr encode-int encode+
     " AAPL,address" property
 
